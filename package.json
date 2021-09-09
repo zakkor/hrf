@@ -1,0 +1,17 @@
+{
+  "name": "rfhtml",
+  "version": "0.0.1",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "for p in *.test.js; do node $p; done"
+  },
+  "author": "zakkor",
+  "license": "MIT",
+  "devDependencies": {
+    "estree-walker": "^3.0.0",
+    "svelte": "^3.38.3",
+    "uvu": "^0.5.1"
+  }
+}
