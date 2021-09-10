@@ -19,13 +19,12 @@ const [options, cmdexp, ...paths] = parseArgs(args, process.argv);
 options.verbose = options.v;
 options.follow = false;
 
-// TODO: In-place
 // TODO: Debug mode shows output
 hawk(cmdexp, paths, options).then(results => {
   results.forEach(({ path, file, output }) => {
     if (options.i) {
       // Modify in-place
-      writeFile(path, file);
+      if (file) writeFile(path, file);
     } else {
       console.log(file);
     }
