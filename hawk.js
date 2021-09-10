@@ -189,15 +189,26 @@ function safeDelete(file, node) {
 function setAttr(file, ast, node, name, value) {
   const attr = node.attributes?.find(a => a.name === name);
   // TODO: Write this in a nicer way
+  // FIXME: These indices are very tricky
   if (!attr) {
+    // Go from <Comp> to <Comp attr="value">
     const nameWithValue = `${name}="${value}"`;
 
-    const start = node.end - 2; // '/>'
+    const start = node.start + node.name.length + 1; // "<" and " "
     const end = start + nameWithValue.length;
 
-    file = file.substring(0, start) + nameWithValue + ' ' + file.substring(node.end - 2);
+    file = file.substring(0, start) + ' ' + nameWithValue + file.substring(start);
+
+    const n = end - start + 1;
+    node.end += n;
+    shiftAST({
+      ast,
+      start: node.start,
+      shiftLeft: -n,
+    });
+
     node.attributes.push({
-      start,
+      start: start + 1,
       end,
       type: 'Attribute',
       name,
@@ -211,16 +222,18 @@ function setAttr(file, ast, node, name, value) {
         },
       ],
     });
-    node.end = end + 3; // ' />'
-    const n = end - start;
-    shiftAST({
-      ast,
-      start: node.end,
-      shiftLeft: n < value.length ? n - value.length : value.length - n,
-    });
     return file;
   }
-  // FIXME: value[0]? What else can it be?
+  if (attr.value.length <= 0) {
+    attr.value.push({
+      start: attr.start + attr.name.length + 2,
+      end: attr.start + attr.name.length + 2,
+      type: 'Text',
+      raw: '',
+      data: '',
+    });
+  }
+
   const val = attr.value[0];
   file = file.substring(0, val.start) + value + file.substring(val.end);
   const n = val.end - val.start;
@@ -289,4 +302,13 @@ function parseCommand(str) {
   const cpat = nthIndexOf(str, delim, 2);
   const pat = str.substring(opat + 1, cpat);
   return { matcher: pat, body: str.slice(cpat + 1, str.length) };
+}
+
+function printLocation(file, start, end, expect) {
+  console.log(
+    `location: [${file.substring(start, end)}]`,
+    `expected: [${expect}]`,
+    'matches:',
+    file.substring(start, end) === expect
+  );
 }

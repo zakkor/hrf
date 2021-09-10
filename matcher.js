@@ -124,17 +124,38 @@ export function parseMatcher(s) {
 }
 
 function exists(name, _, attrs) {
-  // TODO: Extract and reuse regex/groups logic
+  // TODO: Name should support regex too
   return attrs.some(a => a.name === name);
 }
 
 function exact(name, value, attrs) {
+  // TODO: Name should support regex too
   const attr = attrs.find(a => a.name === name);
   if (!attr) return false;
   const data = attr.value[0].data;
   if (!data) return false;
-  // TODO: Extract and reuse regex/groups logic
-  const search = splitRegexes(value)
+  return matchRegex(value, true)(data);
+}
+
+function includes(name, value, attrs) {
+  // TODO: Name should support regex too
+  const attr = attrs.find(a => a.name === name);
+  if (!attr) return false;
+  const data = attr.value[0].data;
+  if (!data) return false;
+
+  let groups = [];
+  const matched = value.split(' ').every(v => {
+    const test = matchRegex(v);
+    return data.split(' ').find(nv => {
+      return test(nv, groups).matched;
+    });
+  });
+  return { matched, groups };
+}
+
+function matchRegex(s, exact = false) {
+  const search = splitRegexes(s)
     .map(p => {
       if (p.kind === 'plain') {
         return escapeRegex(p.data);
@@ -142,37 +163,15 @@ function exact(name, value, attrs) {
       return p.data;
     })
     .join('');
-  const re = new RegExp('^' + search + '$');
-  return re.test(data);
-}
+  const re = new RegExp(exact ? `^${search}$` : search);
 
-function includes(name, value, attrs) {
-  const attr = attrs.find(a => a.name === name);
-  if (!attr) return false;
-  const data = attr.value[0].data;
-  if (!data) return false;
-
-  // TODO: Extract and reuse regex/groups logic
-  let groups = [];
-  const found = value.split(' ').every(v => {
-    const search = splitRegexes(v)
-      .map(p => {
-        if (p.kind === 'plain') {
-          return escapeRegex(p.data);
-        }
-        return p.data;
-      })
-      .join('');
-    const re = new RegExp(search);
-    return data.split(' ').find(nv => {
-      const t = re.test(nv);
-      if (t) {
-        groups.push(nv);
-      }
-      return t;
-    });
-  });
-  return { found, groups };
+  return function (s, groups = []) {
+    const matched = re.test(s);
+    if (matched) {
+      groups.push(s);
+    }
+    return { matched, groups };
+  };
 }
 
 function splitRegexes(s) {
@@ -279,11 +278,11 @@ export async function match(ast, matcher, fn) {
       let allGroups = {};
       if (matcher.attributes.length > 0) {
         const attrsMatch = matcher.attributes.every(({ name, operator, value }) => {
-          const { found, groups } = operator(name, value, node.attributes);
-          if (found) {
+          const { matched, groups } = operator(name, value, node.attributes);
+          if (matched) {
             allGroups[name] = groups;
           }
-          return found;
+          return matched;
         });
         if (!attrsMatch) {
           return;

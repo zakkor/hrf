@@ -46,6 +46,11 @@ htest('set attributes through proxy', {
   file: `<Comp foo="hello" />`,
   expect: '<Comp foo="hello world" />',
 });
+htest('set attribute with empty value', {
+  cmd: '/Comp/ a.foo = "world"',
+  file: `<Comp foo="" />`,
+  expect: '<Comp foo="world" />',
+});
 htest('create attribute', {
   cmd: '/Comp/ a.foo = "hello"',
   file: `<Comp />`,
@@ -54,7 +59,7 @@ htest('create attribute', {
 htest('create attribute with nodes before and after', {
   cmd: '/Comp/ a.foo = "hello"; a.baz = "another"',
   file: `<Before /> <Comp bar="world" /> <After />`,
-  expect: '<Before /> <Comp bar="world" foo="hello" baz="another" /> <After />',
+  expect: '<Before /> <Comp baz="another" foo="hello" bar="world" /> <After />',
 });
 htest('create attribute shifts AST correctly', {
   cmd: '/Comp/ a.foo = "hello"; a.baz = "another"; d();',
@@ -200,6 +205,11 @@ htest('no match returns the same file', {
   expect: `<Comp class="foo" />`,
 });
 
+htest('regex simple', {
+  cmd: '/Comp.{[a-z][a-z][a-z]}/ d',
+  file: `<Comp class="abc" />`,
+  expect: ``,
+});
 htest('regex in class', {
   cmd: '/Comp.w-{[0-9]}/ d',
   file: `<Comp class="w-a" /><Comp class="w-0" /><Comp class="w-bc" /><Comp class="w-3" /><Comp class="w-23" />`,
@@ -210,8 +220,10 @@ htest('regex in attribute exact', {
   file: `<Comp class="w-a" /><Comp class="w-0" /><Comp class="w-bc" /><Comp class="w-3 not exact" /><Comp class="w-23" />`,
   expect: `<Comp class="w-a" /><Comp class="w-bc" /><Comp class="w-3 not exact" /><Comp class="w-23" />`,
 });
-
-// TODO: 
-// hrf $ ./bin/hawk.js "/Button.h-{[0-9]+}/ a.size = m.class[0]; c[m.class[0]] = false;" test/button.svelte
+htest('regex matched group', {
+  cmd: '/Button.h-{[0-9]+}/ a.size = m.class[0]; c[m.class[0]] = false',
+  file: `<Button class="h-10 w-full" padding="px-6">Click</Button>`,
+  expect: `<Button size="h-10" class="w-full" padding="px-6">Click</Button>`,
+});
 
 test.run();
