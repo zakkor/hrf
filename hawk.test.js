@@ -194,6 +194,11 @@ htest('delete multiple nodes interspersed with nodes not to be deleted', {
 <NotComp></NotComp>`,
 });
 
+// TODO: regex
+
+// TODO: use `m` object to get matched regexes
+// hawk -i "/Button.w-{[0-9]+}/ delete c[m[0]]; a.size += m[0]"
+
 // TODO: delete attributes implicit match
 // TODO: delete all attributes
 

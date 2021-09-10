@@ -174,14 +174,15 @@ export function tokenize(s) {
   let ident = '';
   for (let i = 0; i < s.length; i++) {
     // Identifier
-    while (isAllowedIdent(s[i])) {
-      // Escape next character
-      if (s[i] === '\\') {
-        ident += s[++i];
-      } else {
-        ident += s[i];
+    let regex = s[i] === '{';
+    while (isAllowedIdent(s[i]) || regex) {
+      if (regex && s[i] === '}') {
+        regex = false;
       }
-      i++;
+      ident += s[i++];
+      if (!regex) {
+        regex = s[i] === '{';
+      }
     }
     if (ident.length > 0) {
       tokens.push({ t: 'IDENT', repr: ident });
