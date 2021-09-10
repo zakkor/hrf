@@ -1,93 +1,87 @@
-## Replace
+## hawk
 
+### Command syntax
 ```
-{delim}{matcher}{delim} {
-  {...commands}
-}
-```
-
-```
-/Button[size]/ {
-    // Delete component
-    d
-    // Delete attribute
-    da size
-    // Delete attribute with no arguments = all matched attributes are passed
-    da
-    // Change component name
-    c NewButton
-    // Access matched data
-    // Component name
-    $c
-    // Attributes
-    // By position
-    $a[0]
-    // By name
-    $a.size
-    // Get name
-    $a[0]
-
-    // 
-    $a[0] = $$a.0 + 1
-    m.component.name = 'Ratton';
-    m.attrs.size = '';
-} 
+/selector/
+  ...commands
 ```
 
-Syntax sugar for
+### Manipulating classnames
 
-```
-{
-  d();
-  da('size');
-  da();
-  c('NewButton');
-}
-```
+Classnames are available on the `c` object, where each key in the map is the classname, and the value is a boolean that indicates if the class exists or not.
 
-### Example 1
+#### Check for classname existence
 
-Delete size attribute
-
-```
-<Button size="h-[40px]">
-  Get started
-</Button>
+```js
+c.foo; // true | false
 ```
 
-```
-/Button[size]/ da
+#### Enable classname
+
+```js
+c.foo = true;
 ```
 
-### Example 2
+#### Disable classname
 
-For "Button" components that have a size attribute, delete all attributes
+```js
+c.foo = false;
 
-```
-<Button size="h-[40px]" foo="bar" bar="baz">
-  Get started
-</Button>
-```
-
-```
-/Button[size]/ da $a
-// aka
-/Button[size]/ da size foo bar
+// Or using `delete`
+delete c.foo;
 ```
 
-### Example 3
+#### Toggle classname
 
-For "Button" components that have a size attribute which matches the regex, transform
-
-```
-<Button size="h-[40px]">
-  Get started
-</Button>
+```js
+c.foo = !c.foo;
 ```
 
+### Manipulating attributes
+
+All component attributes are available on an object named `a`.
+
+The attributes can be read or modified either by using the object syntax, or by using the provided free-form functions.
+
+#### Get attribute
+
+```js
+a.foo;
 ```
-/Button[size=h-\[([0-9]+)px\]]/ {
-  console.log(name, 'is cool!');
-}
+
+#### Set attribute
+
+```js
+a.name = 'value';
+
+// Or using function syntax
+sa('name', 'value');
+```
+
+#### Delete attributes
+
+```js
+delete a.attr1;
+
+// Or using function syntax
+da('attr1', 'attr2', ...);
+```
+
+#### Rename attribute
+
+```js
+a.newname = a.oldname;
+delete a.oldname;
+
+// Or using function syntax
+ra('oldname', 'newname');
+```
+
+### Manipulating component
+
+#### Delete component
+
+```js
+d();
 ```
 
