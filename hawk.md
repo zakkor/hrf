@@ -85,3 +85,22 @@ ra('oldname', 'newname');
 d();
 ```
 
+
+### Regex in identifiers
+
+You can use regular expressions in any identifier by surrounding them in `{}`.
+
+```
+/h-{[0-6]}/
+```
+
+
+#### Using matched groups
+
+The matched attributes can be accessed on the `m` object, for each attribute.
+
+```
+/Button.width-{.+} height-{.+}/
+```
+
+In this example, `m.class[0]` would be the matched width, and `m.class[1]` would be the matched height.
