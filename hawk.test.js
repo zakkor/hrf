@@ -194,12 +194,24 @@ htest('delete multiple nodes interspersed with nodes not to be deleted', {
 <NotComp></NotComp>`,
 });
 
-// TODO: regex
+htest('no match returns the same file', {
+  cmd: '/Comp.nope/ d',
+  file: `<Comp class="foo" />`,
+  expect: `<Comp class="foo" />`,
+});
+
+htest('regex in class', {
+  cmd: '/Comp.w-{[0-9]}/ d',
+  file: `<Comp class="w-a" /><Comp class="w-0" /><Comp class="w-bc" /><Comp class="w-3" /><Comp class="w-23" />`,
+  expect: `<Comp class="w-a" /><Comp class="w-bc" /><Comp class="w-23" />`,
+});
+htest('regex in attribute exact', {
+  cmd: '/Comp[class=w-{[0-9]}]/ d',
+  file: `<Comp class="w-a" /><Comp class="w-0" /><Comp class="w-bc" /><Comp class="w-3 not exact" /><Comp class="w-23" />`,
+  expect: `<Comp class="w-a" /><Comp class="w-bc" /><Comp class="w-3 not exact" /><Comp class="w-23" />`,
+});
 
 // TODO: use `m` object to get matched regexes
 // hawk -i "/Button.w-{[0-9]+}/ delete c[m[0]]; a.size += m[0]"
-
-// TODO: delete attributes implicit match
-// TODO: delete all attributes
 
 test.run();

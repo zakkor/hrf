@@ -14,8 +14,11 @@ export async function hawk(cmdexp, paths, options) {
     return processFile(
       path,
       async (file, ast) => {
-        // TODO: Maybe do this without needing to await here?
-        return { path, ...(await executeCommand(file, ast, matcher, cmd)) };
+        return new Promise(resolve => {
+          executeCommand(file, ast, matcher, cmd).then(res => {
+            resolve({ path, ...res });
+          });
+        });
       },
       options,
       cache
@@ -41,104 +44,111 @@ export async function hawkData(cmdexp, file, options = {}) {
 }
 
 async function executeCommand(file, ast, matcher, cmd) {
-  return match(ast, matcher, node => {
-    // Logging
-    let output = '';
-    globalThis.log = (...args) => {
-      output += util.format(...args) + '\n';
-    };
+  return new Promise(resolve => {
+    match(ast, matcher, node => {
+      // Logging
+      let output = '';
+      globalThis.log = (...args) => {
+        output += util.format(...args) + '\n';
+      };
 
-    // Attributes
-    const attrs = node.attributes.reduce((acc, v) => {
-      acc[v.name] = flattenValue(v.value);
-      return acc;
-    }, {});
-    globalThis.a = new Proxy(attrs, {
-      // Get attribute value
-      get(target, name) {
-        return target[name];
-      },
-      // Set attribute value
-      set(target, name, value) {
-        file = setAttr(file, ast, node, name, value);
-        target[name] = value;
-        return true;
-      },
-      // Delete attribute
-      deleteProperty(target, name) {
-        file = deleteAttr(file, ast, node, name);
-        delete target[name];
-        return true;
-      },
-    });
-
-    // TODO: Proxify classlist
-    // Class list (classnames as array)
-    let classlist = flattenValue(node.attributes.find(a => a.name === 'class')?.value)?.split(' ');
-    globalThis.cl = classlist;
-
-    // Class object (classnames as map)
-    const classes =
-      classlist?.length === 1 && classlist?.[0] === 'true'
-        ? {}
-        : classlist?.reduce((acc, v) => {
-            acc[v] = true;
-            return acc;
-          }, {});
-    if (classes) {
-      globalThis.c = new Proxy(classes, {
+      // Attributes
+      const attrs = node.attributes.reduce((acc, v) => {
+        acc[v.name] = flattenValue(v.value);
+        return acc;
+      }, {});
+      globalThis.a = new Proxy(attrs, {
+        // Get attribute value
         get(target, name) {
-          if (!(name in target)) {
-            return false;
-          }
           return target[name];
         },
-        // Add/remove classname
+        // Set attribute value
         set(target, name, value) {
-          if (value) {
-            classlist = classlist?.filter(c => c !== name).concat(name);
-          } else {
-            classlist = classlist?.filter(c => c !== name);
-          }
-          globalThis.cl = classlist;
-          file = setAttr(file, ast, node, 'class', classlist.join(' '));
+          file = setAttr(file, ast, node, name, value);
           target[name] = value;
           return true;
         },
+        // Delete attribute
         deleteProperty(target, name) {
-          classlist = classlist?.filter(c => c !== name);
-          globalThis.cl = classlist;
-          file = setAttr(file, ast, node, 'class', classlist.join(' '));
+          file = deleteAttr(file, ast, node, name);
           delete target[name];
           return true;
         },
       });
-    }
 
-    // Delete element
-    globalThis.d = () => {
-      file = deleteElement(file, ast, node);
-    };
-    // Delete attributes
-    globalThis.da = (...names) => {
-      for (const name of names) {
-        file = deleteAttr(file, ast, node, name);
+      // TODO: Proxify classlist
+      // Class list (classnames as array)
+      let classlist = flattenValue(node.attributes.find(a => a.name === 'class')?.value)?.split(' ');
+      globalThis.cl = classlist;
+
+      // Class object (classnames as map)
+      const classes =
+        classlist?.length === 1 && classlist?.[0] === 'true'
+          ? {}
+          : classlist?.reduce((acc, v) => {
+              acc[v] = true;
+              return acc;
+            }, {});
+      if (classes) {
+        globalThis.c = new Proxy(classes, {
+          get(target, name) {
+            if (!(name in target)) {
+              return false;
+            }
+            return target[name];
+          },
+          // Add/remove classname
+          set(target, name, value) {
+            if (value) {
+              classlist = classlist?.filter(c => c !== name).concat(name);
+            } else {
+              classlist = classlist?.filter(c => c !== name);
+            }
+            globalThis.cl = classlist;
+            file = setAttr(file, ast, node, 'class', classlist.join(' '));
+            target[name] = value;
+            return true;
+          },
+          deleteProperty(target, name) {
+            classlist = classlist?.filter(c => c !== name);
+            globalThis.cl = classlist;
+            file = setAttr(file, ast, node, 'class', classlist.join(' '));
+            delete target[name];
+            return true;
+          },
+        });
       }
-    };
-    // Set attribute (value)
-    globalThis.sa = (name, value) => {
-      file = setAttr(file, ast, node, name, value);
-    };
-    // Rename attribute (key)
-    globalThis.ra = (name, value) => {
-      file = renameAttr(file, ast, node, name, value);
-    };
 
-    const ret = eval(cmd.body);
-    if (typeof ret === 'function') {
-      ret();
-    }
-    return { file, output };
+      // Delete element
+      globalThis.d = () => {
+        file = deleteElement(file, ast, node);
+      };
+      // Delete attributes
+      globalThis.da = (...names) => {
+        for (const name of names) {
+          file = deleteAttr(file, ast, node, name);
+        }
+      };
+      // Set attribute (value)
+      globalThis.sa = (name, value) => {
+        file = setAttr(file, ast, node, name, value);
+      };
+      // Rename attribute (key)
+      globalThis.ra = (name, value) => {
+        file = renameAttr(file, ast, node, name, value);
+      };
+
+      const ret = eval(cmd.body);
+      if (typeof ret === 'function') {
+        ret();
+      }
+      return { file, output };
+    }).then(res => {
+      if (res.file === undefined) {
+        res.file = file;
+      }
+      resolve(res);
+    });
   });
 }
 

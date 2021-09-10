@@ -132,7 +132,16 @@ function exact(name, value, attrs) {
   if (!attr) return false;
   const data = attr.value[0].data;
   if (!data) return false;
-  return value === data;
+  const search = splitRegexes(value)
+    .map(p => {
+      if (p.kind === 'plain') {
+        return escapeRegex(p.data);
+      }
+      return p.data;
+    })
+    .join('');
+  const re = new RegExp('^' + search + '$');
+  return re.test(data);
 }
 
 function includes(name, value, attrs) {
@@ -140,7 +149,41 @@ function includes(name, value, attrs) {
   if (!attr) return false;
   const data = attr.value[0].data;
   if (!data) return false;
-  return value.split(' ').every(v => data.split(' ').find(nv => nv === v));
+  return value.split(' ').every(v => {
+    const search = splitRegexes(v)
+      .map(p => {
+        if (p.kind === 'plain') {
+          return escapeRegex(p.data);
+        }
+        return p.data;
+      })
+      .join('');
+    const re = new RegExp(search);
+    return data.split(' ').find(nv => {
+      return re.test(nv);
+    });
+  });
+}
+
+function splitRegexes(s) {
+  let parts = [];
+  let buf = '';
+  for (let i = 0; i < s.length; i++) {
+    if (s[i] === '{') {
+      parts.push({ kind: 'plain', data: buf });
+      buf = '';
+    } else if (s[i] === '}') {
+      parts.push({ kind: 'regex', data: buf });
+      buf = '';
+    } else {
+      buf += s[i];
+    }
+  }
+  return [...parts, { kind: 'plain', data: buf }];
+}
+
+function escapeRegex(s) {
+  return s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
 }
 
 const lookupTokens = {
@@ -207,7 +250,7 @@ function isAllowedIdent(c) {
  * @param {import('svelte/types/compiler/interfaces').Ast} ast
  * @param {Matcher} matcher
  * @param {Function} fn
- * @returns {Promise<string>}
+ * @returns {Promise<{ file: string, output: string }>}
  */
 export async function match(ast, matcher, fn) {
   let file;
