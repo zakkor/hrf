@@ -124,6 +124,7 @@ export function parseMatcher(s) {
 }
 
 function exists(name, _, attrs) {
+  // TODO: Extract and reuse regex/groups logic
   return attrs.some(a => a.name === name);
 }
 
@@ -132,6 +133,7 @@ function exact(name, value, attrs) {
   if (!attr) return false;
   const data = attr.value[0].data;
   if (!data) return false;
+  // TODO: Extract and reuse regex/groups logic
   const search = splitRegexes(value)
     .map(p => {
       if (p.kind === 'plain') {
@@ -149,7 +151,10 @@ function includes(name, value, attrs) {
   if (!attr) return false;
   const data = attr.value[0].data;
   if (!data) return false;
-  return value.split(' ').every(v => {
+
+  // TODO: Extract and reuse regex/groups logic
+  let groups = [];
+  const found = value.split(' ').every(v => {
     const search = splitRegexes(v)
       .map(p => {
         if (p.kind === 'plain') {
@@ -160,9 +165,14 @@ function includes(name, value, attrs) {
       .join('');
     const re = new RegExp(search);
     return data.split(' ').find(nv => {
-      return re.test(nv);
+      const t = re.test(nv);
+      if (t) {
+        groups.push(nv);
+      }
+      return t;
     });
   });
+  return { found, groups };
 }
 
 function splitRegexes(s) {
@@ -243,7 +253,9 @@ export function tokenize(s) {
 }
 
 function isAllowedIdent(c) {
-  return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || ['\\', '-', '_'].includes(c);
+  return (
+    (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || ['\\', '-', '_', '/'].includes(c)
+  );
 }
 
 /**
@@ -264,15 +276,20 @@ export async function match(ast, matcher, fn) {
       ) {
         return;
       }
+      let allGroups = {};
       if (matcher.attributes.length > 0) {
-        const attrsMatch = matcher.attributes.every(({ name, operator, value }) =>
-          operator(name, value, node.attributes)
-        );
+        const attrsMatch = matcher.attributes.every(({ name, operator, value }) => {
+          const { found, groups } = operator(name, value, node.attributes);
+          if (found) {
+            allGroups[name] = groups;
+          }
+          return found;
+        });
         if (!attrsMatch) {
           return;
         }
       }
-      const res = fn(node);
+      const res = fn(node, allGroups);
       if (!res) {
         return;
       }

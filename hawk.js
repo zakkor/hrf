@@ -45,13 +45,14 @@ export async function hawkData(cmdexp, file, options = {}) {
 
 async function executeCommand(file, ast, matcher, cmd) {
   return new Promise(resolve => {
-    match(ast, matcher, node => {
+    match(ast, matcher, (node, groups) => {
       // Logging
       let output = '';
       globalThis.log = (...args) => {
         output += util.format(...args) + '\n';
       };
 
+      // TODO: Attributes should have .push(), .remove(), .toggle() methods that deal with space-separation
       // Attributes
       const attrs = node.attributes.reduce((acc, v) => {
         acc[v.name] = flattenValue(v.value);
@@ -118,6 +119,9 @@ async function executeCommand(file, ast, matcher, cmd) {
           },
         });
       }
+
+      // Matched regex groups
+      globalThis.m = groups;
 
       // Delete element
       globalThis.d = () => {

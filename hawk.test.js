@@ -211,7 +211,7 @@ htest('regex in attribute exact', {
   expect: `<Comp class="w-a" /><Comp class="w-bc" /><Comp class="w-3 not exact" /><Comp class="w-23" />`,
 });
 
-// TODO: use `m` object to get matched regexes
-// hawk -i "/Button.w-{[0-9]+}/ delete c[m[0]]; a.size += m[0]"
+// TODO: 
+// hrf $ ./bin/hawk.js "/Button.h-{[0-9]+}/ a.size = m.class[0]; c[m.class[0]] = false;" test/button.svelte
 
 test.run();
