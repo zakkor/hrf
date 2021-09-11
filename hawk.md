@@ -1,6 +1,6 @@
 ## hawk
 
-> `hgrep` is like `grep`, but for HTML.
+> Like `awk`, but for HTML _(sort of)_.
 
 Search through a multitude of files using (simplified!) CSS selectors.
 
