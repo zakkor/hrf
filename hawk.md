@@ -1,10 +1,28 @@
 ## hawk
 
-### Command syntax
+> `hgrep` is like `grep`, but for HTML.
+
+Search through a multitude of files using (simplified!) CSS selectors.
+
+### Usage
+
 ```
-/selector/
-  ...commands
+hawk [...options] command ...files
 ```
+
+### Hawk command syntax
+
+```
+/selector/ ...commands
+```
+
+[See the matcher documentation for more information on the simplified CSS selector syntax.](/matcher.md)
+
+### Options
+
+| Switch | Meaning            |
+| ------ | ------------------ |
+| -i     | Edit file in-place |
 
 ### Manipulating classnames
 
@@ -77,23 +95,13 @@ delete a.oldname;
 ra('oldname', 'newname');
 ```
 
-### Manipulating component
-
-#### Delete component
-
-```js
-d();
-```
-
-
-### Regex in identifiers
+#### Regex in identifiers
 
 You can use regular expressions in any identifier by surrounding them in `{}`.
 
 ```
 /h-{[0-6]}/
 ```
-
 
 #### Using matched groups
 
@@ -104,3 +112,11 @@ The matched attributes can be accessed on the `m` object, for each attribute.
 ```
 
 In this example, `m.class[0]` would be the matched width, and `m.class[1]` would be the matched height.
+
+### Manipulating component
+
+#### Delete component
+
+```js
+d();
+```

@@ -1,95 +1,67 @@
-# Simplified CSS selectors
+## Simplified CSS selectors
 
-# Attributes
+> Just plain old CSS selectors, but made super easy to type.
 
-## No attributes
+No need for double quotes in attribute lists, inserting dots before each classname, or other pesky stuff.
 
-`el`
+### Class lists don't need a space before each class
 
-`el[]`
+Instead of:
 
-## Single attribute with no value
+```
+Button.this.is.a.long.classname
+```
 
-`el[foo]`
+Just do:
 
-## Multiple attributes with no value
+```
+Button.this is a long classname
+```
 
-`el[foo bar]`
+### Attribute values do not need to be double quoted
 
-## Attribute with value without any spaces
+Instead of:
 
-Simple form:
+```
+Button[attr="value"]
+```
 
-`el[foo=a]`
+Just do:
 
-Quoted:
+```
+Button[attr=value]
+```
 
-`el[foo="a"]`
+It works even if the value has spaces in it:
 
-## Attribute with value without any spaces followed by attribute without value
+```
+Button[attr=this is a long value] // Still works
+```
 
-Simple form:
+Or if there are multiple attributes with spaces in them:
 
-`el[foo=a, bar]`
+```
+Button[attr=this is a long value, anotherattr=this is another long value]
+```
 
-Quoted:
+### Comma is optional
 
-`el[foo="a" bar]`
+The comma to separate different attributes is optional:
 
-## Attribute with value containing spaces
+```
+Button[attr=this is a long value anotherattr=this is another long value]
+```
 
-Simple form:
+But if you wish to have an attribute without a value immediately after, the comma becomes mandatory:
 
-`el[foo=a b c d]`
+```
+Button[attr=this is a long value, anotherattr]
+```
 
-Quoted:
+### Currently supported operators
 
-`el[foo="a b c d"]`
+https://developer.mozilla.org/en-US/docs/Web/CSS/Attribute_selectors#syntax
 
-## Multiple attributes with values without any spaces
-
-Simple form:
-
-`el[foo=a bar=b]`
-
-Quoted:
-
-`el[foo="a" bar="b"]`
-
-## Multiple attributes with values containing spaces
-
-Simple form:
-
-`el[foo=a b c d bar=e f g h]`
-
-Quoted:
-
-`el[foo="a b c d" bar="e f g h"]`
-
-## Attribute with value containing spaces followed by attribute without value
-
-Unquoted values should have a trailing comma to signify the value list ending:
-
-`el[foo=a b c d, bar baz]`
-
-Quoted values do not need a trailing comma:
-
-`el[foo="a b c d" bar baz]`
-
-## Class attribute has special "." shorthand
-
-Value without spaces:
-
-`el.foo // Equivalent to el[class=foo]`
-
-With value containing spaces:
-
-`el.foo bar baz // Equivalent to el[class=foo bar baz]`
-
-Class terminator (for when there are multiple elements in the same command):
-
-`firstEl.foo bar baz. secondEl`
-
-## ID attribute has special "#" shorthand
-
-`el#id`
+- `=` (exact equals)
+- `~=` (includes)
+- Others will be added in the near future

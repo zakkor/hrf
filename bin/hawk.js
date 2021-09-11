@@ -9,15 +9,9 @@ const writeFile = util.promisify(fs.writeFile);
 
 /** @type {import('../index').ArgTemplate} */
 const args = {
-  v: 'boolean',
-  n: 'boolean',
-  H: 'boolean',
-  A: 'number',
   i: 'boolean',
 };
 const [options, cmdexp, ...paths] = parseArgs(args, process.argv);
-options.verbose = options.v;
-options.follow = false;
 
 // TODO: Debug mode shows output
 hawk(cmdexp, paths, options).then(results => {
