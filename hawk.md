@@ -24,7 +24,25 @@ hawk [...options] command ...files
 | ------ | ------------------ |
 | -i     | Edit file in-place |
 
-### Manipulating classnames
+### Examples
+
+#### Scenario 1:
+
+Add a scenario here!
+
+#### Scenario 2:
+
+Add a scenario here!
+
+#### Scenario 3:
+
+Add a scenario here!
+
+### Reference
+
+---
+
+#### Manipulating classnames
 
 Classnames are available on the `c` object, where each key in the map is the classname, and the value is a boolean that indicates if the class exists or not.
 
@@ -55,7 +73,9 @@ delete c.foo;
 c.foo = !c.foo;
 ```
 
-### Manipulating attributes
+---
+
+#### Manipulating attributes
 
 All component attributes are available on an object named `a`.
 
@@ -113,7 +133,11 @@ The matched attributes can be accessed on the `m` object, for each attribute.
 
 In this example, `m.class[0]` would be the matched width, and `m.class[1]` would be the matched height.
 
-### Manipulating component
+---
+
+#### Manipulating component
+
+Some functions operate on the whole matched component, rather than at the attribute or classname level.
 
 #### Delete component
 
