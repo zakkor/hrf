@@ -13,8 +13,10 @@ hawk [...options] command ...files
 ### Hawk command syntax
 
 ```
-/selector/ ...commands
+/selector/ ...statements
 ```
+
+Where the selector is a simplified CSS selector, and the expressions are JavaScript statements.
 
 [See the matcher documentation for more information on the simplified CSS selector syntax.](/matcher.md)
 
