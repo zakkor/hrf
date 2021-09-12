@@ -2,7 +2,7 @@
 
 `hrf` is a collection of refactoring and code discovery tools designed for use with HTML and HTML-like languages, with a twist of Unix philosophy.
 
-### hgrep
+## hgrep
 
 > Like `grep`, but for HTML.
 
@@ -10,7 +10,7 @@ Search through a multitude of files using (simplified!) CSS selectors.
 
 [See the documentation page for `hgrep`.](/hgrep.md)
 
-### hawk
+## hawk
 
 > Like `awk`, but for HTML _(sort of)_.
 
