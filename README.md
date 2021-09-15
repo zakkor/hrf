@@ -6,7 +6,7 @@
 
 > Like `grep`, but for HTML.
 
-Search through a multitude of files using (simplified!) CSS selectors.
+Search through a multitude of files using (simplified) CSS selectors.
 
 [See the documentation page for `hgrep`.](/hgrep.md)
 
@@ -14,7 +14,7 @@ Search through a multitude of files using (simplified!) CSS selectors.
 
 > Like `awk`, but for HTML _(sort of)_.
 
-Find HTML elements using (simplified!) CSS selectors and programmatically apply changes to them in any way you like, which makes large changes across your entire codebase a walk in the park. And there's no need to learn some arcane DSL - it's just JavaScript.
+Find HTML elements using (simplified) CSS selectors and programmatically apply changes to them in any way you like, which makes large changes across your entire codebase a walk in the park. And there's no need to learn some arcane DSL - it's just JavaScript.
 
 [See the documentation page for `hawk`.](/hawk.md)
 
