@@ -16,7 +16,7 @@ hawk [...options] command ...files
 /selector/ ...statements
 ```
 
-Where the selector is a simplified CSS selector, and the expressions are JavaScript statements.
+Where the selector is a simplified CSS selector, and the statements are JavaScript statements.
 
 [See the matcher documentation for more information on the simplified CSS selector syntax.](/matcher.md)
 
