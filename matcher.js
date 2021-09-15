@@ -292,11 +292,15 @@ export async function match(ast, matcher, fn) {
       if (!res) {
         return;
       }
-      const { file: newfile, output } = res;
-      if (newfile !== null && newfile !== undefined) {
-        file = newfile;
+      if (typeof res === 'object') {
+        const { file: newfile, output } = res;
+        if (newfile !== null && newfile !== undefined) {
+          file = newfile;
+        }
+        allOutput += output;
+      } else if (typeof res === 'string') {
+        file = res;
       }
-      allOutput += output;
     },
   });
   return { file, output: allOutput };

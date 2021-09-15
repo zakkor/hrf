@@ -1,6 +1,6 @@
 import { relative } from 'path';
 import util from 'util';
-import { processFile, processData, shiftAST } from './index.js';
+import { processFile, parseHTML, shiftAST } from './index.js';
 import { parseMatcher, match } from './matcher.js';
 import { nthIndexOf } from './strings.js';
 
@@ -32,7 +32,7 @@ export async function hawkData(cmdexp, file, options = {}) {
   const matcher = parseMatcher(cmd.matcher);
   /** @type {Cache} */
   const cache = {};
-  return processData(
+  return parseHTML(
     '.',
     file,
     (file, ast) => {
@@ -52,7 +52,9 @@ async function executeCommand(file, ast, matcher, cmd) {
         output += util.format(...args) + '\n';
       };
 
-      // TODO: Attributes should have .push(), .remove(), .toggle() methods that deal with space-separation
+      // TODO: Attributes should be an object with a .toString representation. Assigning to keys of the attribute object should enable/disable individual attribute values.
+      // Assigning a plain string to an attribute will just override the whole thing.
+
       // Attributes
       const attrs = node.attributes.reduce((acc, v) => {
         acc[v.name] = flattenValue(v.value);
@@ -180,10 +182,6 @@ function deleteAttr(file, ast, node, name) {
   return file;
 }
 
-function safeDelete(file, node) {
-  cleanWhitespace(file, node);
-  return file.substring(0, node.start) + file.substring(node.end);
-}
 
 // FIXME: Wherever we change node values, we need to actually mutate the nodes too, not just the file.
 function setAttr(file, ast, node, name, value) {
@@ -235,13 +233,17 @@ function setAttr(file, ast, node, name, value) {
   }
 
   const val = attr.value[0];
-  file = file.substring(0, val.start) + value + file.substring(val.end);
-  const n = val.end - val.start;
+  file = replace(file, val, value);
+  const shiftl = determineShift(val, value);
+  node.end -= shiftl;
+  attr.end -= shiftl;
+  val.end -= shiftl;
   shiftAST({
     ast,
-    start: node.start,
-    shiftLeft: n < value.length ? n - value.length : value.length - n,
+    start: val.start,
+    shiftLeft: shiftl,
   });
+
   return file;
 }
 
@@ -257,6 +259,21 @@ function renameAttr(file, ast, node, name, newName) {
     shiftLeft: n < newName.length ? n - newName.length : newName.length - n,
   });
   return file;
+}
+
+function replace(file, { start, end }, value) {
+  return file.substring(0, start) + value + file.substring(end);
+}
+
+function determineShift(node, s) {
+  const oldlen = node.end - node.start;
+  const newlen = s.length;
+  return oldlen - newlen;
+}
+
+function safeDelete(file, node) {
+  cleanWhitespace(file, node);
+  return file.substring(0, node.start) + file.substring(node.end);
 }
 
 function cleanWhitespace(file, node) {
@@ -304,11 +321,9 @@ function parseCommand(str) {
   return { matcher: pat, body: str.slice(cpat + 1, str.length) };
 }
 
-function printLocation(file, start, end, expect) {
+function printLocation(file, { start, end }, expect) {
   console.log(
     `location: [${file.substring(start, end)}]`,
-    `expected: [${expect}]`,
-    'matches:',
-    file.substring(start, end) === expect
+    ...(expect ? [`expected: [${expect}]`, 'matches:', file.substring(start, end) === expect] : [])
   );
 }

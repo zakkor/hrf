@@ -46,6 +46,11 @@ htest('set attributes through proxy', {
   file: `<Comp foo="hello" />`,
   expect: '<Comp foo="hello world" />',
 });
+htest('set attribute multiple', {
+  cmd: '/Comp/ a.foo = "bar"',
+  file: `<Comp foo="hello" /><Another /><Comp foo="hello" />`,
+  expect: '<Comp foo="bar" /><Another /><Comp foo="bar" />',
+});
 htest('set attribute with empty value', {
   cmd: '/Comp/ a.foo = "world"',
   file: `<Comp foo="" />`,
@@ -142,6 +147,11 @@ htest('delete classname', {
   file: `<Comp class="first second third" />`,
   expect: `<Comp class="second third" />`,
   expectOutput: 'false\n',
+});
+htest('delete classname multiple', {
+  cmd: '/Comp/ delete c.first',
+  file: `<Comp class="first second third" /><Another /><Comp class="second third first" />`,
+  expect: `<Comp class="second third" /><Another /><Comp class="second third" />`,
 });
 // TODO: Is there any point in having the class list?
 htest('read class list empty', {

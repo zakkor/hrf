@@ -1,6 +1,6 @@
 import { relative } from 'path';
 
-import { processFile } from './index.js';
+import { processFile, parseHTML } from './index.js';
 import { parseMatcher, match } from './matcher.js';
 import { nthIndexOf } from './strings.js';
 
@@ -14,7 +14,6 @@ export async function hgrep(matcherexp, paths, options = {}) {
       path,
       (file, ast) => {
         if (options.verbose) console.log('searching in file:', path);
-
         match(ast, matcher, node => {
           console.log(location(path, file, node, options));
         });
@@ -23,6 +22,35 @@ export async function hgrep(matcherexp, paths, options = {}) {
       cache
     );
   }
+}
+
+/**
+ *
+ * @param {string} matcherexp
+ * @param {string} file
+ * @param {{
+      v: boolean,
+      n: boolean,
+      H: boolean,
+      A: number,
+    }} options
+ * @returns {Promise<string>}
+ */
+export async function hgrepData(matcherexp, file, options = {}) {
+  const matcher = parseMatcher(matcherexp);
+  /** @type {import('./index').Cache} */
+  const cache = {};
+  return parseHTML(
+    '.',
+    file,
+    (file, ast) => {
+      return match(ast, matcher, node => {
+        return location('.', file, node, options);
+      });
+    },
+    options,
+    cache
+  );
 }
 
 function location(path, file, { start, end }, options) {

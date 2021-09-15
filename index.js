@@ -33,10 +33,11 @@ export async function processFile(path, fn, options, cache) {
     }
     return;
   }
-  return processData(path, file, fn, options, cache);
+  return parseHTML(path, file, fn, options, cache);
 }
 
-export async function processData(path, file, fn, options, cache) {
+// TODO: remove the cache completely - we will never get duplicate files passed, so it has no point
+export async function parseHTML(path, file, fn, options, cache) {
   // Strip all styles - trying to `svelte.parse` style tags that require special preprocessing
   // (like PostCSS for example), would result in an error.
 
