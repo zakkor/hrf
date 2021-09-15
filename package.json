@@ -1,5 +1,5 @@
 {
-  "name": "rfhtml",
+  "name": "@zkjs/hrf",
   "version": "0.0.1",
   "description": "",
   "type": "module",
@@ -12,9 +12,11 @@
   },
   "author": "zakkor",
   "license": "MIT",
-  "devDependencies": {
+  "dependencies": {
     "estree-walker": "^3.0.0",
-    "svelte": "^3.38.3",
+    "svelte": "^3.38.3"
+  },
+  "devDependencies": {
     "uvu": "^0.5.1"
   }
 }
