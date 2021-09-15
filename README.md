@@ -24,6 +24,10 @@ Just plain old CSS selectors, but made super easy to type. No need for double qu
 
 [See the documentation page for simplified CSS selectors.](/matcher.md)
 
+### Installation
+
+`npm install @zkjs/hrf -g`
+
 #### Language support
 
 - [x] Plain HTML - yes
