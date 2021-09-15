@@ -123,25 +123,31 @@ export function parseMatcher(s) {
   return r;
 }
 
-function exists(name, _, attrs) {
-  // TODO: Name should support regex too
-  return attrs.some(a => a.name === name);
+function exists(name, _, attrs = []) {
+  const test = matchRegex(name);
+  for (const attr of attrs) {
+    const res = test(attr.name);
+    if (res.matched) {
+      return res;
+    }
+  }
+  return { matched: false, groups: [] };
 }
 
-function exact(name, value, attrs) {
+function exact(name, value, attrs = []) {
   // TODO: Name should support regex too
   const attr = attrs.find(a => a.name === name);
   if (!attr) return false;
-  const data = attr.value[0].data;
+  const data = typeof attr.value === 'object' && attr.value.length > 0 ? attr.value[0].data : attr.value;
   if (!data) return false;
   return matchRegex(value, true)(data);
 }
 
-function includes(name, value, attrs) {
+function includes(name, value, attrs = []) {
   // TODO: Name should support regex too
   const attr = attrs.find(a => a.name === name);
   if (!attr) return false;
-  const data = attr.value[0].data;
+  const data = typeof attr.value === 'object' && attr.value.length > 0 ? attr.value[0].data : attr.value;
   if (!data) return false;
 
   let groups = [];
@@ -264,7 +270,7 @@ function isAllowedIdent(c) {
  * @returns {Promise<{ file: string, output: string }>}
  */
 export async function match(ast, matcher, fn) {
-  let file;
+  let file = '';
   let allOutput = '';
   await asyncWalk(ast, {
     enter(node) {

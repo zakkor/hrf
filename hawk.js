@@ -150,7 +150,7 @@ async function executeCommand(file, ast, matcher, cmd) {
       }
       return { file, output };
     }).then(res => {
-      if (res.file === undefined) {
+      if (res.file === undefined || res.file === '') {
         res.file = file;
       }
       resolve(res);

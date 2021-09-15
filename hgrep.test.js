@@ -32,6 +32,15 @@ htest('element with true attribute', {
   file: '<div boolean>hello world</div>',
   matcher: 'div[boolean]',
 });
+htest('regex in attribute', {
+  file: '<div thing>hello world</div>',
+  matcher: 'div[{^thi}]',
+});
+htest('regex in attribute no match', {
+  file: '<div thing>hello world</div>',
+  matcher: 'div[{[0-9]}]',
+  expect: '',
+});
 htest('true attribute', {
   file: '<div boolean>hello world</div>',
   matcher: '[boolean]',
