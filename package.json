@@ -3,7 +3,10 @@
   "version": "0.0.1",
   "description": "",
   "type": "module",
-  "main": "index.js",
+  "bin": {
+    "hgrep": "./bin/hgrep.js",
+    "hawk": "./bin/hawk.js"
+  },
   "scripts": {
     "test": "for p in *.test.js; do node $p; done"
   },
