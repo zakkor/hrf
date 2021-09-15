@@ -2,7 +2,7 @@
 
 > Like `awk`, but for HTML _(sort of)_.
 
-Search through a multitude of files using (simplified!) CSS selectors.
+Find HTML elements using (simplified!) CSS selectors and programmatically apply changes to them in any way you like, which makes large changes across your entire codebase a walk in the park. And there's no need to learn some arcane DSL - it's just JavaScript.
 
 ### Usage
 
