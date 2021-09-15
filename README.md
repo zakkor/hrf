@@ -5,7 +5,9 @@
 
 ## Installation
 
-`npm install @zkjs/hrf -g`
+```
+npm install @zkjs/hrf -g
+```
 
 ## hgrep
 
