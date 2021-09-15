@@ -2,6 +2,11 @@
 
 `hrf` is a collection of refactoring and code discovery tools designed for use with HTML and HTML-like languages, with a twist of Unix philosophy.
 
+
+## Installation
+
+`npm install @zkjs/hrf -g`
+
 ## hgrep
 
 > Like `grep`, but for HTML.
@@ -23,10 +28,6 @@ Find HTML elements using (simplified) CSS selectors and programmatically apply c
 Just plain old CSS selectors, but made super easy to type. No need for double quotes in attribute lists, inserting dots before each classname, or other pesky stuff.
 
 [See the documentation page for simplified CSS selectors.](/matcher.md)
-
-### Installation
-
-`npm install @zkjs/hrf -g`
 
 #### Language support
 
