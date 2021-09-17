@@ -14,11 +14,7 @@ export async function hawk(cmdexp, paths, options) {
     return processFile(
       path,
       async (file, ast) => {
-        return new Promise(resolve => {
-          executeCommand(file, ast, matcher, cmd).then(res => {
-            resolve({ path, ...res });
-          });
-        });
+        return { path, ...(await executeCommand(file, ast, matcher, cmd)) };
       },
       options,
       cache
@@ -181,7 +177,6 @@ function deleteAttr(file, ast, node, name) {
   });
   return file;
 }
-
 
 // FIXME: Wherever we change node values, we need to actually mutate the nodes too, not just the file.
 function setAttr(file, ast, node, name, value) {

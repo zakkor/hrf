@@ -1,6 +1,6 @@
 import fs from 'fs';
 import util from 'util';
-import * as svelte from 'svelte/compiler'
+import * as svelte from 'svelte/compiler';
 import { walk } from 'estree-walker';
 
 const readFile = util.promisify(fs.readFile);
@@ -28,9 +28,7 @@ export async function processFile(path, fn, options, cache) {
   try {
     file = await readFile(path, 'utf8');
   } catch (err) {
-    if (options.verbose) {
-      console.error(`could not read file: ${path} ${err}`);
-    }
+    console.error(`could not read file: ${path} ${err}`);
     return;
   }
   return parseHTML(path, file, fn, options, cache);
