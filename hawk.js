@@ -2,7 +2,7 @@ import { relative } from 'path';
 import util from 'util';
 import { processFile, parseHTML, shiftAST } from './index.js';
 import { parseMatcher, match } from './matcher.js';
-import { nthIndexOf } from './strings.js';
+import { nthIndexOf, findFirstIndexReverse, findFirstIndex } from './strings.js';
 
 export async function hawk(cmdexp, paths, options) {
   const cmd = parseCommand(cmdexp);
@@ -125,6 +125,10 @@ async function executeCommand(file, ast, matcher, cmd) {
       globalThis.d = () => {
         file = deleteElement(file, ast, node);
       };
+      // Rename element
+      globalThis.r = name => {
+        file = renameElement(file, ast, node, name);
+      };
       // Delete attributes
       globalThis.da = (...names) => {
         for (const name of names) {
@@ -165,6 +169,49 @@ function deleteElement(file, ast, node) {
   return file;
 }
 
+// Regular element:
+// <Comp> hello world </Comp>
+//  ^^^^                ^^^^
+//   n1                  n2
+//
+// Self-closing element:
+// <Comp />
+//  ^^^^
+//   n1
+function renameElement(file, ast, node, name) {
+  // Change `n1`
+  const firstNameStart = node.start + 1; // <
+  const firstNameEnd = findFirstIndex(file, ['\n', ' '], node.start); // Newline or space, whichever comes first
+  file = file.substring(0, firstNameStart) + name + file.substring(firstNameEnd);
+  shiftAST({
+    ast,
+    start: node.start - 1,
+    shiftLeft: node.name.length - name.length,
+  });
+
+  // If tag is self-closing, nothing more to do
+  const selfClosing = findFirstIndexReverse(file, '/>', node.end, '<');
+  if (!selfClosing) {
+    // Change `n2`
+    const closingTagStart = findFirstIndexReverse(file, '</', node.end);
+    const lastNameStart = closingTagStart + 2; // </
+    const lastNameEnd = node.end - 1; // >
+    file = file.substring(0, lastNameStart) + name + file.substring(lastNameEnd);
+    // `end` has moved to the right again
+    node.end += node.name.length - name.length;
+    // Shift all nodes after this one
+    shiftAST({
+      ast,
+      start: node.end,
+      shiftLeft: node.name.length - name.length,
+    });
+  }
+
+  node.name = name;
+
+  return file;
+}
+
 function deleteAttr(file, ast, node, name) {
   const attr = node.attributes.find(a => a.name === name);
   if (!attr) return file;
@@ -178,65 +225,77 @@ function deleteAttr(file, ast, node, name) {
   return file;
 }
 
-// FIXME: Wherever we change node values, we need to actually mutate the nodes too, not just the file.
 function setAttr(file, ast, node, name, value) {
   const attr = node.attributes?.find(a => a.name === name);
-  // TODO: Write this in a nicer way
-  // FIXME: These indices are very tricky
   if (!attr) {
-    // Go from <Comp> to <Comp attr="value">
-    const nameWithValue = `${name}="${value}"`;
+    return createAttr(file, ast, node, name, value);
+  }
 
-    const start = node.start + node.name.length + 1; // "<" and " "
-    const end = start + nameWithValue.length;
+  if (attr.value.length === 0 || attr.value === true) {
+    const insvalue = attr.value === true ? `="${value}"` : value;
+    const attrvaluestart = attr.start + attr.name.length + '="'.length;
+    const pos = attr.value === true ? attr.end : attrvaluestart;
 
-    file = file.substring(0, start) + ' ' + nameWithValue + file.substring(start);
+    file = insert(file, ast, insvalue, pos);
 
-    const n = end - start + 1;
-    node.end += n;
-    shiftAST({
-      ast,
-      start: node.start,
-      shiftLeft: -n,
-    });
+    attr.value = [
+      {
+        start: attrvaluestart,
+        end: attrvaluestart + value.length,
+        type: 'Text',
+        raw: value,
+        data: value,
+      },
+    ];
 
-    node.attributes.push({
-      start: start + 1,
-      end,
-      type: 'Attribute',
-      name,
-      value: [
-        {
-          start: start + name.length + 2, // ="
-          end: end,
-          type: 'Text',
-          raw: value,
-          data: value,
-        },
-      ],
-    });
+    node.end += insvalue.length;
+    attr.end += insvalue.length;
+
     return file;
   }
-  if (attr.value.length <= 0) {
-    attr.value.push({
-      start: attr.start + attr.name.length + 2,
-      end: attr.start + attr.name.length + 2,
-      type: 'Text',
-      raw: '',
-      data: '',
-    });
+
+  const attrvalue = attr.value[0];
+  if (!attrvalue) {
+    throw new Error('trying to set attribute value that does not exist');
   }
 
-  const val = attr.value[0];
-  file = replace(file, val, value);
-  const shiftl = determineShift(val, value);
-  node.end -= shiftl;
-  attr.end -= shiftl;
-  val.end -= shiftl;
-  shiftAST({
-    ast,
-    start: val.start,
-    shiftLeft: shiftl,
+  const [newfile, shiftLeft] = replace(file, ast, attrvalue.start, attrvalue.end, value);
+  file = newfile;
+
+  node.end -= shiftLeft;
+  attr.end -= shiftLeft;
+  attrvalue.end -= shiftLeft;
+
+  attrvalue.data = value;
+  attrvalue.raw = value;
+
+  return file;
+}
+
+function createAttr(file, ast, node, name, value) {
+  const newattr = ` ${name}="${value}"`;
+  const pos = node.start + node.name.length + 1;
+  file = insert(file, ast, newattr, pos);
+  // Node at position has become longer by the length of the new attribute
+  node.end += newattr.length;
+  // Insert new attribute node into the AST
+  const attrstart = pos + ' '.length;
+  const attrend = pos + newattr.length;
+
+  node.attributes.push({
+    start: attrstart,
+    end: attrend,
+    type: 'Attribute',
+    name,
+    value: [
+      {
+        start: attrstart + `${name}="`.length,
+        end: attrend - '"'.length,
+        type: 'Text',
+        raw: value,
+        data: value,
+      },
+    ],
   });
 
   return file;
@@ -245,25 +304,38 @@ function setAttr(file, ast, node, name, value) {
 function renameAttr(file, ast, node, name, newName) {
   const attr = node.attributes?.find(a => a.name === name);
   if (!attr) return file;
-  file = file.substring(0, attr.start) + newName + file.substring(attr.start + name.length);
-  const n = name.length;
+
+  const [newfile, shiftLeft] = replace(file, ast, attr.start, attr.start + attr.name.length, newName);
+  file = newfile;
+
   attr.name = newName;
-  shiftAST({
-    ast,
-    start: node.start,
-    shiftLeft: n < newName.length ? n - newName.length : newName.length - n,
-  });
+
+  node.end -= shiftLeft;
+  attr.end -= shiftLeft;
+
   return file;
 }
 
-function replace(file, { start, end }, value) {
-  return file.substring(0, start) + value + file.substring(end);
+// Insert string at file position and shift all nodes after.
+function insert(file, ast, str, pos) {
+  file = file.substring(0, pos) + str + file.substring(pos);
+  shiftAST({ ast, start: pos, shiftLeft: -str.length });
+  return file;
 }
 
-function determineShift(node, s) {
-  const oldlen = node.end - node.start;
-  const newlen = s.length;
-  return oldlen - newlen;
+/** Replace string at specified range and shift all nodes.
+ * @param {string} file
+ * @param {import('estree-walker').BaseNode} ast
+ * @param {number} start
+ * @param {number} end
+ * @param {string} str
+ * @returns {[string, number]} */
+function replace(file, ast, start, end, str) {
+  file = file.substring(0, start) + str + file.substring(end);
+  const oldlen = end - start;
+  const shiftLeft = oldlen - str.length;
+  shiftAST({ ast, start, shiftLeft });
+  return [file, shiftLeft];
 }
 
 function safeDelete(file, node) {
@@ -316,9 +388,34 @@ function parseCommand(str) {
   return { matcher: pat, body: str.slice(cpat + 1, str.length) };
 }
 
-function printLocation(file, { start, end }, expect) {
+function printLocation(file, start, end) {
+  console.log(`location [${file.substring(start, end)}]`);
+}
+
+function printNode(file, node) {
   console.log(
-    `location: [${file.substring(start, end)}]`,
-    ...(expect ? [`expected: [${expect}]`, 'matches:', file.substring(start, end) === expect] : [])
+    'node [%s], contents [%s], range [%s - %s]',
+    node.name || node.type,
+    file.substring(node.start, node.end),
+    node.start,
+    node.end
   );
+  for (const n of node.attributes) {
+    console.log(
+      '\tattribute [%s], contents [%s], range [%s - %s]',
+      n.name,
+      file.substring(n.start, n.end),
+      n.start,
+      n.end
+    );
+    for (const val of n.value) {
+      console.log(
+        '\t\tvalue [%s], contents [%s], range [%s - %s]',
+        val.data,
+        file.substring(val.start, val.end),
+        val.start,
+        val.end
+      );
+    }
+  }
 }

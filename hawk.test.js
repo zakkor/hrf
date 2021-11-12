@@ -46,6 +46,31 @@ htest('set attributes through proxy', {
   file: `<Comp foo="hello" />`,
   expect: '<Comp foo="hello world" />',
 });
+htest('create attribute, then set', {
+  cmd: '/Comp/ a.new = "hello"; a.new = "world";',
+  file: `<Comp foo="hello" />`,
+  expect: '<Comp new="world" foo="hello" />',
+});
+htest('set same attribute multiple times', {
+  cmd: '/Comp/ a.foo = "world"; a.foo = "z";',
+  file: `<Comp baz="first" foo="hello" qux="third" />`,
+  expect: '<Comp baz="first" foo="z" qux="third" />',
+});
+htest('create two attrs', {
+  cmd: '/Button/ a.height = "h-10"; a.width = "w-10";',
+  file: `<Button>Click</Button>`,
+  expect: `<Button width="w-10" height="h-10">Click</Button>`,
+});
+htest('create attr when other attrs already exist', {
+  cmd: '/Button.h-10/ a.size = "h-10";',
+  file: `<Button class="h-10 w-full" padding="px-6">Click</Button>`,
+  expect: `<Button size="h-10" class="h-10 w-full" padding="px-6">Click</Button>`,
+});
+htest('create attr when other attrs already exist then delete attr', {
+  cmd: '/Button.h-10/ a.size = "h-10"; da("class")',
+  file: `<Button class="h-10 w-full" padding="px-6">Click</Button>`,
+  expect: `<Button size="h-10" padding="px-6">Click</Button>`,
+});
 htest('set attribute multiple', {
   cmd: '/Comp/ a.foo = "bar"',
   file: `<Comp foo="hello" /><Another /><Comp foo="hello" />`,
@@ -55,6 +80,11 @@ htest('set attribute with empty value', {
   cmd: '/Comp/ a.foo = "world"',
   file: `<Comp foo="" />`,
   expect: '<Comp foo="world" />',
+});
+htest('set attribute from true value to string value', {
+  cmd: "/div/ a.foo = 'bar';",
+  file: `<div foo></div>`,
+  expect: `<div foo="bar"></div>`,
 });
 htest('create attribute', {
   cmd: '/Comp/ a.foo = "hello"',
@@ -85,6 +115,15 @@ htest('delete one attribute', {
   Hello world
 </Comp>`,
 });
+htest('delete js handler attribute', {
+  cmd: "/Comp/ da('onFoo');",
+  file: `<Comp onFoo={event => (isFoo = event.target.foo > 0)}>
+  Hello world
+</Comp>`,
+  expect: `<Comp>
+  Hello world
+</Comp>`,
+});
 htest('delete multiple attributes', {
   cmd: "/Comp/ da('foo', 'bar');",
   file: `<Comp foo="hello" bar="world">
@@ -103,6 +142,26 @@ htest('rename attribute with nodes before and after', {
   cmd: "/Comp/ ra('foo', 'bar');",
   file: `<Another foo="hello" /> <Comp foo="hello" /> <Another foo="hello" />`,
   expect: `<Another foo="hello" /> <Comp bar="hello" /> <Another foo="hello" />`,
+});
+htest('rename attr then delete other attr', {
+  cmd: "/div/ ra('foo', 'quux'); da('bar')",
+  file: `<div foo="first" bar="second" zop="third"></div>`,
+  expect: `<div quux="first" zop="third"></div>`,
+});
+htest('rename attr, set attr, then delete other attr', {
+  cmd: "/div/ ra('foo', 'quux'); a.bar = 'new'; da('zop')",
+  file: `<div foo="first" bar="second" zop="third"></div>`,
+  expect: `<div quux="first" bar="new"></div>`,
+});
+htest('rename attr, create attr, then delete last attr', {
+  cmd: "/div/ ra('foo', 'quux'); a.bar = 'new'; da('zop')",
+  file: `<div foo="first" zop="third"></div>`,
+  expect: `<div bar="new" quux="first"></div>`,
+});
+htest('rename attr, create attr, then delete first attr', {
+  cmd: "/div/ ra('foo', 'quux'); a.bar = 'new'; da('height')",
+  file: `<div height="h-64" foo="first"></div>`,
+  expect: `<div bar="new" quux="first"></div>`,
 });
 
 htest('read class string', {
@@ -209,6 +268,76 @@ htest('delete multiple nodes interspersed with nodes not to be deleted', {
 <NotComp></NotComp>`,
 });
 
+htest('rename node', {
+  cmd: "/Comp/ r('NewName')",
+  file: `<Comp foo="hello">Hello world</Comp>`,
+  expect: `<NewName foo="hello">Hello world</NewName>`,
+});
+htest('rename node with newline', {
+  cmd: "/Comp/ r('NewName')",
+  file: `<Comp
+  class="foo">
+</Comp>`,
+  expect: `<NewName
+  class="foo">
+</NewName>`,
+});
+htest('rename node check shift', {
+  cmd: "/Comp/ r('NewName'); a.new = 'world'; da('attr');",
+  file: `<Comp class="foo" attr="bar">Hello world</Comp>`,
+  expect: `<NewName new="world" class="foo">Hello world</NewName>`,
+});
+htest('rename node, but not the node after it', {
+  cmd: "/Comp/ r('NewName')",
+  file: `<Comp foo="hello">
+  Hello world
+</Comp>
+<NotComp foo="hello"></NotComp>`,
+  expect: `<NewName foo="hello">
+  Hello world
+</NewName>
+<NotComp foo="hello"></NotComp>`,
+});
+htest('rename node, but not the node before it', {
+  cmd: "/Comp/ r('NewName')",
+  file: `<NotComp foo="hello"></NotComp>
+<Comp foo="hello">
+  Hello world
+</Comp>`,
+  expect: `<NotComp foo="hello"></NotComp>
+<NewName foo="hello">
+  Hello world
+</NewName>`,
+});
+htest('rename multiple nodes', {
+  cmd: "/Comp/ r('NewName')",
+  file: `<Comp first>Hello world</Comp>
+<Comp second>Hello world</Comp>
+<Comp third>Hello world</Comp>`,
+  expect: `<NewName first>Hello world</NewName>
+<NewName second>Hello world</NewName>
+<NewName third>Hello world</NewName>`,
+});
+htest('rename multiple nodes interspersed with nodes not to be renamed', {
+  cmd: "/Comp/ r('NewName')",
+  file: `<Comp first>Hello world</Comp>
+<NotComp></NotComp>
+<Comp second>Hello world</Comp>
+<NotComp></NotComp>
+<Comp third>Hello world</Comp>`,
+  expect: `<NewName first>Hello world</NewName>
+<NotComp></NotComp>
+<NewName second>Hello world</NewName>
+<NotComp></NotComp>
+<NewName third>Hello world</NewName>`,
+});
+
+htest('rename node self-closing', {
+  cmd: "/Comp/ r('NewName')",
+  file: `<Comp foo="hello" />`,
+  expect: `<NewName foo="hello" />`,
+});
+
 htest('no match returns the same file', {
   cmd: '/Comp.nope/ d',
   file: `<Comp class="foo" />`,
@@ -234,6 +363,23 @@ htest('regex matched group', {
   cmd: '/Button.h-{[0-9]+}/ a.size = m.class[0]; c[m.class[0]] = false',
   file: `<Button class="h-10 w-full" padding="px-6">Click</Button>`,
   expect: `<Button size="h-10" class="w-full" padding="px-6">Click</Button>`,
+});
+
+// More random test cases that I can't bother to simplify down to basic usages
+htest('real 1', {
+  cmd: "/div/ ra('onScroll', 'on:scroll'); a.class = 'overflow-y-auto'; a.class = 'foo'; da('height')",
+  file: `<div height="max-h-64" onScroll={event => (isScrolling = event.target.scrollTop > 0)}></div>`,
+  expect: `<div class="foo" on:scroll={event => (isScrolling = event.target.scrollTop > 0)}></div>`,
+});
+htest('real 2', {
+  cmd: "/div/ ra('onScroll', 'on:scroll'); a.class = 'overflow-y-auto'; da('height')",
+  file: `<div height="max-h-64" onScroll={event => (isScrolling = event.target.scrollTop > 0)}></div>`,
+  expect: `<div class="overflow-y-auto" on:scroll={event => (isScrolling = event.target.scrollTop > 0)}></div>`,
+});
+htest('real 3', {
+  cmd: "/div/ ra('onScroll', 'on:scroll'); a.class = 'overflow-y-auto';",
+  file: `<div height="max-h-64" onScroll={event => (isScrolling = event.target.scrollTop > 0)}></div>`,
+  expect: `<div class="overflow-y-auto" height="max-h-64" on:scroll={event => (isScrolling = event.target.scrollTop > 0)}></div>`,
 });
 
 test.run();

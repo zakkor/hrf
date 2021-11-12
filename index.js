@@ -96,6 +96,7 @@ export function parseArgs(tmpl, [_, __, ...args]) {
   return [options, cmd, ...files];
 }
 
+// If you want the node itself to be included, pass in `start: node.start-1`
 export function shiftAST({ ast, remove, start, shiftLeft }) {
   walk(ast, {
     enter(node) {
