@@ -1,6 +1,6 @@
 import { relative } from 'path';
 import util from 'util';
-import { processFile, parseHTML, shiftAST } from './index.js';
+import { processFile, parseHTML, shiftAST, removeNode } from './index.js';
 import { parseMatcher, match } from './matcher.js';
 import { nthIndexOf, findFirstIndexReverse, findFirstIndex } from './strings.js';
 
@@ -182,12 +182,14 @@ function renameElement(file, ast, node, name) {
   // Change `n1`
   const firstNameStart = node.start + 1; // <
   const firstNameEnd = findFirstIndex(file, ['\n', ' '], node.start); // Newline or space, whichever comes first
+  // TODO: This should use `replace`
   file = file.substring(0, firstNameStart) + name + file.substring(firstNameEnd);
   shiftAST({
     ast,
-    start: node.start - 1,
+    start: node.start,
     shiftLeft: node.name.length - name.length,
   });
+  node.end -= node.name.length - name.length;
 
   // If tag is self-closing, nothing more to do
   const selfClosing = findFirstIndexReverse(file, '/>', node.end, '<');
@@ -196,6 +198,7 @@ function renameElement(file, ast, node, name) {
     const closingTagStart = findFirstIndexReverse(file, '</', node.end);
     const lastNameStart = closingTagStart + 2; // </
     const lastNameEnd = node.end - 1; // >
+    // TODO: This should use `replace`
     file = file.substring(0, lastNameStart) + name + file.substring(lastNameEnd);
     // `end` has moved to the right again
     node.end += node.name.length - name.length;
@@ -215,13 +218,18 @@ function renameElement(file, ast, node, name) {
 function deleteAttr(file, ast, node, name) {
   const attr = node.attributes.find(a => a.name === name);
   if (!attr) return file;
+
+  // TODO: Rename `safeDelete` to `delete`
   file = safeDelete(file, attr);
+  removeNode(ast, attr);
+  const shiftLeft = attr.end - attr.start;
   shiftAST({
     ast,
-    remove: attr,
-    start: node.start,
-    shiftLeft: attr.end - attr.start,
+    start: attr.start,
+    shiftLeft,
   });
+  node.end -= shiftLeft;
+
   return file;
 }
 

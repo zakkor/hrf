@@ -111,3 +111,13 @@ export function shiftAST({ ast, remove, start, shiftLeft }) {
     },
   });
 }
+
+export function removeNode(ast, node) {
+  walk(ast, {
+    enter(n) {
+      if (n === node) {
+        this.remove();
+      }
+    },
+  });
+}

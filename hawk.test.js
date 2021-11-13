@@ -124,6 +124,29 @@ htest('delete js handler attribute', {
   Hello world
 </Comp>`,
 });
+htest('delete attribute after create and set attribute', {
+  cmd: `/h1/ if (a.class) {
+  a.class += ' ';
+} else {
+  a.class = '';
+};
+a.class += 'a';
+if (a.height) {
+  a.class += ' ' + a.height;
+  delete a.height;
+}
+if (a.kind && a.kind === 'light') {
+  a.class += ' b';
+}`,
+  file: `<div class="foo">
+  <h1 kind="light" height="c">
+  </h1>
+</div>`,
+  expect: `<div class="foo">
+  <h1 class="a c b" kind="light">
+  </h1>
+</div>`,
+});
 htest('delete multiple attributes', {
   cmd: "/Comp/ da('foo', 'bar');",
   file: `<Comp foo="hello" bar="world">
@@ -287,6 +310,11 @@ htest('rename node check shift', {
   file: `<Comp class="foo" attr="bar">Hello world</Comp>`,
   expect: `<NewName new="world" class="foo">Hello world</NewName>`,
 });
+htest('create attr then delete', {
+  cmd: "/Comp/ a.new = 'world'; da('attr');",
+  file: `<Comp class="foo" attr="bar">Hello world</Comp>`,
+  expect: `<Comp new="world" class="foo">Hello world</Comp>`,
+});
 htest('rename node, but not the node after it', {
   cmd: "/Comp/ r('NewName')",
   file: `<Comp foo="hello">
@@ -363,6 +391,12 @@ htest('regex matched group', {
   cmd: '/Button.h-{[0-9]+}/ a.size = m.class[0]; c[m.class[0]] = false',
   file: `<Button class="h-10 w-full" padding="px-6">Click</Button>`,
   expect: `<Button size="h-10" class="w-full" padding="px-6">Click</Button>`,
+});
+
+htest('svelte bindings', {
+  cmd: '/div/ da("this");',
+  file: `<div bind:this={foo}>hello</div>`,
+  expect: `<div>hello</div>`,
 });
 
 // More random test cases that I can't bother to simplify down to basic usages
