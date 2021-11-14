@@ -53,7 +53,7 @@ async function executeCommand(file, ast, matcher, cmd) {
 
       // Attributes
       const attrs = node.attributes.reduce((acc, v) => {
-        acc[v.name] = flattenValue(v.value);
+        acc[v.name] = flattenValue(file, v.value);
         return acc;
       }, {});
       globalThis.a = new Proxy(attrs, {
@@ -77,7 +77,7 @@ async function executeCommand(file, ast, matcher, cmd) {
 
       // TODO: Proxify classlist
       // Class list (classnames as array)
-      let classlist = flattenValue(node.attributes.find(a => a.name === 'class')?.value)?.split(' ');
+      let classlist = flattenValue(file, node.attributes.find(a => a.name === 'class')?.value)?.split(' ');
       globalThis.cl = classlist;
 
       // Class object (classnames as map)
@@ -262,20 +262,27 @@ function setAttr(file, ast, node, name, value) {
     return file;
   }
 
-  const attrvalue = attr.value[0];
-  if (!attrvalue) {
-    throw new Error('trying to set attribute value that does not exist');
-  }
+  const attrvaluestart = attr.start + attr.name.length + '="'.length;
+  const attrvalueend = attr.end - '"'.length;
 
-  const [newfile, shiftLeft] = replace(file, ast, attrvalue.start, attrvalue.end, value);
+  const [newfile, shiftLeft] = replace(file, ast, attrvaluestart, attrvalueend, value);
   file = newfile;
+
+  // These could be nodes like MustacheTag, BinaryExpression, etc. For the sake of simplicity we just replace with a Text node, with its text content being whatever was given.
+  // In Svelte attributes can contain any sort of expressions. In order to end up with a totally accurate AST, we'd need to parse the expression and insert the resulting nodes.
+  attr.value = [
+    {
+      // New attr value start, end
+      start: attrvaluestart,
+      end: attrvaluestart + value.length,
+      type: 'Text',
+      raw: value,
+      data: value,
+    },
+  ];
 
   node.end -= shiftLeft;
   attr.end -= shiftLeft;
-  attrvalue.end -= shiftLeft;
-
-  attrvalue.data = value;
-  attrvalue.raw = value;
 
   return file;
 }
@@ -372,12 +379,17 @@ function cleanTrailingWhitespace(file, node) {
   }
 }
 
-function flattenValue(value) {
+function flattenValue(file, value) {
   if (value === undefined) {
     return;
   }
   if (typeof value === 'object') {
-    return value.map(v => v.data).join('');
+    // Fix Svelte bug with MustacheTag nodes
+    if (value.length >= 2 && value[0].type === 'Text' && value[1].type === 'MustacheTag') {
+      // Text `.end` is off by one.
+      value[0].end--;
+    }
+    return value.map(v => file.substring(v.start, v.end)).join('');
   }
   return value.toString();
 }

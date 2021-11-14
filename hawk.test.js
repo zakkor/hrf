@@ -399,6 +399,24 @@ htest('svelte bindings', {
   expect: `<div>hello</div>`,
 });
 
+htest('svelte mustachetag read', {
+  cmd: '/div/ log(a.class)',
+  file: `<div class="hello, {name} bar">hello</div>`,
+  expect: `<div class="hello, {name} bar">hello</div>`,
+  expectOutput: 'hello, {name} bar\n',
+});
+htest('svelte mustachetag modify', {
+  cmd: '/div/ a.class += " there!"',
+  file: `<div class="hello, {name} bar">hello</div>`,
+  expect: `<div class="hello, {name} bar there!">hello</div>`,
+});
+htest('svelte expression read', {
+  cmd: '/div/ log(a.class)',
+  file: `<div class={x > 3 ? 'foo' : a + b}>hello</div>`,
+  expect: `<div class={x > 3 ? 'foo' : a + b}>hello</div>`,
+  expectOutput: "{x > 3 ? 'foo' : a + b}\n",
+});
+
 // More random test cases that I can't bother to simplify down to basic usages
 htest('real 1', {
   cmd: "/div/ ra('onScroll', 'on:scroll'); a.class = 'overflow-y-auto'; a.class = 'foo'; da('height')",
